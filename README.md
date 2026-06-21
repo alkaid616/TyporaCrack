@@ -1,0 +1,65 @@
+# TyporaCrack
+
+Typora 1.13.7 许可证绕过工具。通过注入 hook.js 到 app.asar，拦截七层保护机制实现激活。
+
+## 使用方法
+
+```bash
+# 部署 (需要先关闭 Typora)
+python deploy.py
+
+# 恢复原始文件
+python deploy.py --restore
+```
+
+## 仓库结构
+
+```
+TyporaCrack/
+├── hook.js          # 核心绕过 hook (98行)
+├── deploy.py        # 部署/恢复脚本
+├── docs/
+│   └── analysis.md  # 完整逆向分析报告
+├── README.md        # 本文档
+└── .gitignore
+```
+
+## 工作原理
+
+### 七层保护链
+
+```
+① 启动层    launch.dist.js 加载 V8 字节码
+② 完整性    Electron 原生 SHA256 校验 ASAR 文件哈希
+③ 许可证    RSA publicDecrypt 解密许可证密钥
+④ 试用期    注册表 IDate + profile.data._iD
+⑤ 续期      每12小时请求 api/client/activate
+⑥ 页面      IPC license.show 显示许可证窗口
+⑦ 退出      app.quit() → before-quit 事件链
+```
+
+### 绕过方法
+
+| 层 | 保护 | 绕过 |
+|---|------|------|
+| ① | V8 字节码加载 | 改 package.json main → hook.js |
+| ② | SHA256 校验 | npx asar pack 自动计算正确哈希 |
+| ③ | RSA 解密 | Module._load 拦截 |
+| ④ | 试用期 | app.quit hook 阻止退出 |
+| ⑤ | 续期 | app.quit hook 阻止退出 |
+| ⑥ | license.show | IPC 拦截 + BrowserWindow.show 拦截 |
+| ⑦ | app.quit | process.exit(0) + before-quit preventDefault |
+
+### 关键发现
+
+- `Module._load` 比 `Module.prototype.require` 更可靠（拦截 `reqnode` 调用）
+- `process.exit` hook 无效，必须 hook `app.quit`
+- Electron fuse 禁用了 `NODE_OPTIONS`，无法通过环境变量注入
+- `npx asar pack` 自动计算正确的完整性哈希
+- `requestSingleInstanceLock` 区分主/辅助实例
+
+## 免责声明
+
+本项目仅供学习交流使用。请支持正版软件。
+
+Typora 官网: https://typora.io
