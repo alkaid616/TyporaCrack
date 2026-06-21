@@ -5,8 +5,15 @@ Typora 1.13.7 单文件破解脚本
 无需额外文件，直接运行即可部署/恢复。
 
 用法:
-    python deploy_standalone.py           # 部署
-    python deploy_standalone.py --restore # 恢复
+    python TyporaCrack.py <Typora路径>           # 部署
+    python TyporaCrack.py <Typora路径> --restore # 恢复
+
+示例:
+    python TyporaCrack.py D:\\Typora
+    python TyporaCrack.py "C:\\Program Files\\Typora"
+
+    或将脚本放在 Typora 根目录直接运行:
+    python TyporaCrack.py
 """
 
 import os
@@ -15,7 +22,34 @@ import json
 import shutil
 import subprocess
 
-TYPORA_PATH = r"D:\Typora"
+
+def get_typora_path():
+    """获取 Typora 路径: 参数 > 脚本所在目录"""
+    for arg in sys.argv[1:]:
+        if not arg.startswith("-"):
+            return arg
+
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    if os.path.isfile(os.path.join(script_dir, "resources", "app.asar")):
+        return script_dir
+
+    return None
+
+
+RESTORE = "--restore" in sys.argv
+TYPORA_PATH = get_typora_path()
+
+if not TYPORA_PATH:
+    print("[-] Typora path not specified.")
+    print("    Usage: python TyporaCrack.py <Typora路径>")
+    print("    Example: python TyporaCrack.py D:\\Typora")
+    print("    Or place this script in Typora directory.")
+    sys.exit(1)
+
+if not os.path.isdir(TYPORA_PATH):
+    print(f"[-] Path not found: {TYPORA_PATH}")
+    sys.exit(1)
+
 RESOURCES = os.path.join(TYPORA_PATH, "resources")
 APP_ASAR = os.path.join(RESOURCES, "app.asar")
 APP_ASAR_BAK = APP_ASAR + ".bak"
@@ -183,7 +217,8 @@ def restore():
 
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1 and sys.argv[1] == "--restore":
+    print(f"[*] Typora path: {TYPORA_PATH}")
+    if RESTORE:
         restore()
     else:
         sys.exit(deploy())

@@ -17,8 +17,12 @@ Typora 1.13.7 - 七层保护链完整绕过
   - app.quit 必须 hook 以阻止完整性校验失败后的退出
 
 用法:
-    python deploy.py           # 部署
-    python deploy.py --restore # 恢复
+    python deploy.py [Typora安装目录]           # 部署
+    python deploy.py [Typora安装目录] --restore # 恢复
+
+示例:
+    python deploy.py D:\\Typora
+    python deploy.py "C:\\Program Files\\Typora"
 """
 
 import os
@@ -26,8 +30,38 @@ import sys
 import json
 import shutil
 import subprocess
+import glob
 
-TYPORA_PATH = r"D:\Typora"
+
+def get_typora_path():
+    """获取 Typora 路径: 参数 > 脚本所在目录"""
+    # 从参数获取 (忽略 --restore / --help)
+    for arg in sys.argv[1:]:
+        if not arg.startswith("-"):
+            return arg
+
+    # 脚本所在目录 (脚本放在 Typora 根目录时)
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    if os.path.isfile(os.path.join(script_dir, "resources", "app.asar")):
+        return script_dir
+
+    return None
+
+
+RESTORE = "--restore" in sys.argv
+TYPORA_PATH = get_typora_path()
+
+if not TYPORA_PATH:
+    print("[-] Typora path not specified.")
+    print("    Usage: python deploy.py <Typora路径>")
+    print("    Example: python deploy.py D:\\Typora")
+    print("    Or place this script in Typora directory.")
+    sys.exit(1)
+
+if not os.path.isdir(TYPORA_PATH):
+    print(f"[-] Path not found: {TYPORA_PATH}")
+    sys.exit(1)
+
 RESOURCES = os.path.join(TYPORA_PATH, "resources")
 APP_ASAR = os.path.join(RESOURCES, "app.asar")
 APP_ASAR_BAK = APP_ASAR + ".bak"
@@ -133,7 +167,8 @@ def cleanup():
 
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1 and sys.argv[1] == "--restore":
+    print(f"[*] Typora path: {TYPORA_PATH}")
+    if RESTORE:
         restore()
     else:
         sys.exit(deploy())
