@@ -4,20 +4,42 @@ Typora 1.13.7 许可证绕过工具。通过注入 hook.js 到 app.asar，拦截
 
 ## 使用方法
 
+### 方式一: 指定 Typora 路径
+
 ```bash
 # 部署 (需要先关闭 Typora)
-python deploy.py
+python deploy.py D:\Typora
 
 # 恢复原始文件
+python deploy.py D:\Typora --restore
+```
+
+### 方式二: 将脚本放入 Typora 目录
+
+将 `deploy.py` + `hook.js` 复制到 Typora 根目录，直接运行：
+
+```bash
+cd D:\Typora
+python deploy.py
 python deploy.py --restore
+```
+
+### 方式三: 单文件脚本 (无需 hook.js)
+
+`TyporaCrack.py` 内嵌 hook.js，无需额外文件：
+
+```bash
+python TyporaCrack.py D:\Typora
+python TyporaCrack.py D:\Typora --restore
 ```
 
 ## 仓库结构
 
 ```
 TyporaCrack/
+├── TyporaCrack.py   # 单文件破解脚本 (无需额外文件)
 ├── hook.js          # 核心绕过 hook (98行)
-├── deploy.py        # 部署/恢复脚本
+├── deploy.py        # 部署/恢复脚本 (需要 hook.js)
 ├── docs/
 │   └── analysis.md  # 完整逆向分析报告
 ├── README.md        # 本文档
