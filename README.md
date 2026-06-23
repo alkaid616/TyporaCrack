@@ -4,17 +4,24 @@ Typora 1.13.7 许可证绕过工具。通过注入 hook.js 到 app.asar，拦截
 
 ## 使用方法
 
-### 方式一: 指定 Typora 路径
+### 方式一: 增强版 (推荐)
+
+`TyporaCrackPro.py` 整合了 TyporaActivator.exe 逆向分析的改进，新增注册表写入和网络拦截：
 
 ```bash
-# 部署 (需要先关闭 Typora)
-python deploy.py D:\Typora
-
-# 恢复原始文件
-python deploy.py D:\Typora --restore
+python TyporaCrackPro.py D:\Typora            # 完整部署
+python TyporaCrackPro.py D:\Typora --token    # 仅写注册表 (不改 ASAR)
+python TyporaCrackPro.py D:\Typora --restore  # 恢复
 ```
 
-### 方式二: 将脚本放入 Typora 目录
+### 方式二: 指定 Typora 路径
+
+```bash
+python deploy.py D:\Typora            # 部署
+python deploy.py D:\Typora --restore  # 恢复
+```
+
+### 方式三: 将脚本放入 Typora 目录
 
 将 `deploy.py` + `hook.js` 复制到 Typora 根目录，直接运行：
 
@@ -24,7 +31,7 @@ python deploy.py
 python deploy.py --restore
 ```
 
-### 方式三: 单文件脚本 (无需 hook.js)
+### 方式四: 单文件脚本 (无需 hook.js)
 
 `TyporaCrack.py` 内嵌 hook.js，无需额外文件：
 
@@ -37,12 +44,13 @@ python TyporaCrack.py D:\Typora --restore
 
 ```
 TyporaCrack/
-├── TyporaCrack.py   # 单文件破解脚本 (无需额外文件)
-├── hook.js          # 核心绕过 hook (98行)
-├── deploy.py        # 部署/恢复脚本 (需要 hook.js)
+├── TyporaCrackPro.py  # 增强版 (推荐，含注册表+网络拦截)
+├── TyporaCrack.py     # 单文件破解脚本 (无需额外文件)
+├── hook.js            # 核心绕过 hook (98行)
+├── deploy.py          # 部署/恢复脚本 (需要 hook.js)
 ├── docs/
-│   └── analysis.md  # 完整逆向分析报告
-├── README.md        # 本文档
+│   └── analysis.md    # 完整逆向分析报告
+├── README.md          # 本文档
 └── .gitignore
 ```
 
@@ -68,9 +76,18 @@ TyporaCrack/
 | ② | SHA256 校验 | npx asar pack 自动计算正确哈希 |
 | ③ | RSA 解密 | Module._load 拦截 |
 | ④ | 试用期 | app.quit hook 阻止退出 |
-| ⑤ | 续期 | app.quit hook 阻止退出 |
+| ⑤ | 续期 | app.quit hook 阻止退出 + SLicense 日期 trick |
 | ⑥ | license.show | IPC 拦截 + BrowserWindow.show 拦截 |
 | ⑦ | app.quit | process.exit(0) + before-quit preventDefault |
+
+### 增强版额外防御 (TyporaCrackPro.py)
+
+| 防御层 | 来源 | 说明 |
+|--------|------|------|
+| SLicense 注册表 | TyporaActivator.exe 逆向 | 写入格式正确的 SLicense，日期设 2036 年，续期检查永远通过 |
+| DNS 拦截 | TyporaActivator.exe 逆向 | typora 域名重定向到 127.0.0.1 |
+| net.request 拦截 | TyporaActivator.exe 逆向 | Electron 网络请求阻断 |
+| fetch 拦截 | TyporaActivator.exe 逆向 | JS fetch 请求返回 403 |
 
 ### 关键发现
 
@@ -79,6 +96,8 @@ TyporaCrack/
 - Electron fuse 禁用了 `NODE_OPTIONS`，无法通过环境变量注入
 - `npx asar pack` 自动计算正确的完整性哈希
 - `requestSingleInstanceLock` 区分主/辅助实例
+- SLicense 日期设远未来可从数据层面绕过 12h 续期检查（来源: TyporaActivator.exe 逆向）
+- 网络拦截需 DNS + net.request + fetch 三重防护，防止未来版本改用其他协议
 
 ## 免责声明
 
